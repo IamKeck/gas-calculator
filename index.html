@@ -12,6 +12,14 @@
   const app = Elm.Main.init({
     node: document.getElementById("app")
   });
+  app.ports.clearAllConfirm.subscribe(() => {
+    if (confirm("全データを削除します よろしいですか?")) {
+      app.ports.clearAllMessage.send(null);
+
+
+    }
+
+  });
 </script>
 </body>
 </html>

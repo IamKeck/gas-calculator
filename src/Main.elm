@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Html exposing (..)
@@ -43,6 +43,14 @@ type Msg
     | Save
     | ReCalc
     | Remove EntryId
+    | ClearAllConfirm
+    | ClearAll
+
+
+port clearAllConfirm : () -> Cmd msg
+
+
+port clearAllMessage : (() -> msg) -> Sub msg
 
 
 
@@ -66,7 +74,7 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    clearAllMessage <| always ClearAll
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -96,7 +104,6 @@ update msg model =
                 Err errors ->
                     ( { model | messages = errors }, Cmd.none )
 
-                -- TODO:localStorageにセーブ
                 Ok new_entry ->
                     let
                         new_model =
@@ -104,7 +111,6 @@ update msg model =
                     in
                     update ReCalc new_model
 
-        -- TODO:localStorageにセーブ
         Remove entry_id ->
             let
                 new_model =
@@ -131,6 +137,12 @@ update msg model =
                     ( { model | total_distance = Just new_dist, total_gas = Just new_fuel }
                     , Cmd.none
                     )
+
+        ClearAllConfirm ->
+            ( model, clearAllConfirm () )
+
+        ClearAll ->
+            update ReCalc { model | entries = [] }
 
 
 view : Model -> Html Msg
@@ -161,6 +173,7 @@ view model =
             ]
         , div []
             [ button [ HE.onClick Save ] [ text "保存" ]
+            , button [ HE.onClick ClearAllConfirm ] [ text "データクリア" ]
             ]
         , table []
             [ thead []
