@@ -1,25 +1,39 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>ガソリン計算</title>
+    <meta charset="UTF-8">
+    <title>ガソリン計算</title>
 </head>
 
 <body>
 <div id="app"></div>
 <script src="/js/main.js"></script>
 <script>
-  const app = Elm.Main.init({
-    node: document.getElementById("app")
-  });
-  app.ports.clearAllConfirm.subscribe(() => {
-    if (confirm("全データを削除します よろしいですか?")) {
-      app.ports.clearAllMessage.send(null);
-
+    //FIXME: ugly
+    let app;
+    try {
+        const entries = JSON.parse(window.localStorage.getItem("entries")) || [];
+        app = Elm.Main.init({
+            node: document.getElementById("app"),
+            flags: entries
+        });
+    } catch (e) {
+        window.localStorage.removeItem("entries");
+        app = Elm.Main.init({
+            node: document.getElementById("app"),
+            flags: []
+        });
 
     }
-
-  });
+    app.ports.clearAllConfirm.subscribe(() => {
+        if (confirm("全データを削除します よろしいですか?")) {
+            app.ports.clearAllMessage.send(null);
+        }
+    });
+    app.ports.saveData.subscribe((entries) => {
+        console.log(entries);
+        window.localStorage.setItem("entries", JSON.stringify(entries));
+    });
 </script>
 </body>
 </html>

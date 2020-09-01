@@ -47,22 +47,21 @@ type Msg
     | ClearAll
 
 
+port saveData : List Entry -> Cmd msg
+
+
 port clearAllConfirm : () -> Cmd msg
 
 
 port clearAllMessage : (() -> msg) -> Sub msg
 
 
-
--- TODO: localStorageからの初期データのロード
-
-
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Model [] "" "" "" "" [] Nothing Nothing, Cmd.none )
+init : List Entry -> ( Model, Cmd Msg )
+init entries =
+    update ReCalc (Model entries "" "" "" "" [] Nothing Nothing)
 
 
-main : Program () Model Msg
+main : Program (List Entry) Model Msg
 main =
     Browser.element
         { init = init
@@ -120,7 +119,6 @@ update msg model =
             in
             update ReCalc new_model
 
-        -- TODO:localStorageにセーブ
         ReCalc ->
             case model.entries of
                 [] ->
@@ -135,7 +133,7 @@ update msg model =
                             List.sum <| List.map (\entry -> entry.gas) entries
                     in
                     ( { model | total_distance = Just new_dist, total_gas = Just new_fuel }
-                    , Cmd.none
+                    , saveData model.entries
                     )
 
         ClearAllConfirm ->
