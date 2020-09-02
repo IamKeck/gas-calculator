@@ -249,7 +249,7 @@ validate id model =
             V.notEmptyString .form_time [ ( "time", "時刻が入力されていません" ) ]
     in
     V.success Entry
-        |> V.andMap (V.map2 (++) date time)
+        |> V.andMap (V.map2 (\d t -> d ++ " " ++ t) date time)
         |> V.andMap (V.float .form_distance [ ( "distance", "不正な距離です" ) ])
         |> V.andMap (V.float .form_gas [ ( "gas", "不正な給油量です" ) ])
         |> V.andMap (V.success model.form_memo)
