@@ -144,8 +144,15 @@ update msg model =
 
                         new_fuel =
                             List.sum <| List.map (\entry -> entry.gas) entries
+
+                        reordered_entries =
+                            List.sortBy .date entries |> List.reverse
                     in
-                    ( { model | total_distance = Just new_dist, total_gas = Just new_fuel }
+                    ( { model
+                        | total_distance = Just new_dist
+                        , total_gas = Just new_fuel
+                        , entries = reordered_entries
+                      }
                     , saveData model.entries
                     )
 
