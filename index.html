@@ -20,7 +20,7 @@
 <script>
     const app = Elm.Main.init({
         node: document.getElementById("app"),
-        flags: window.localStorage.getItem("entries")
+        flags: window.localStorage.getItem("entries") || ""
     });
 
     app.ports.clearAllConfirm.subscribe(() => {
