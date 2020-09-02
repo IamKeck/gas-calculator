@@ -230,8 +230,15 @@ view model =
 
 validate : EntryId -> Model -> Result V.Error Entry
 validate id model =
+    let
+        date =
+            V.notEmptyString .form_date [ ( "date", "日付が入力されていません" ) ]
+
+        time =
+            V.notEmptyString .form_time [ ( "time", "時刻が入力されていません" ) ]
+    in
     V.success Entry
-        |> V.andMap (V.success <| model.form_date ++ model.form_time)
+        |> V.andMap (V.map2 (++) date time)
         |> V.andMap (V.float .form_distance [ ( "distance", "不正な距離です" ) ])
         |> V.andMap (V.float .form_gas [ ( "gas", "不正な給油量です" ) ])
         |> V.andMap (V.success model.form_memo)

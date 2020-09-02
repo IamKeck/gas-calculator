@@ -34,6 +34,11 @@ map f v =
     \model -> v model |> Result.map f
 
 
+map2 : (a -> b -> c) -> Validator model a -> Validator model b -> Validator model c
+map2 f a b =
+    map f a |> andMap b
+
+
 run : model -> Validator model a -> Result Error a
 run model validator =
     validator model
@@ -62,3 +67,13 @@ andMap v vf model =
 float : (model -> String) -> Error -> Validator model Float
 float f e model =
     f model |> String.toFloat |> Result.fromMaybe e
+
+
+notEmptyString : (model -> String) -> Error -> Validator model String
+notEmptyString f e model =
+    case f model of
+        "" ->
+            Err e
+
+        str ->
+            Ok str
