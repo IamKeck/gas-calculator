@@ -218,29 +218,10 @@ view model =
 
 validate : EntryId -> Model -> Result V.Error Entry
 validate id model =
-    let
-        distValidator : V.Validator Model Float
-        distValidator model_ =
-            case String.toFloat model_.form_distance of
-                Nothing ->
-                    Err [ ( "distance", "不正な距離です" ) ]
-
-                Just dist ->
-                    Ok dist
-
-        gasValidator : V.Validator Model Float
-        gasValidator model_ =
-            case String.toFloat model_.form_gas of
-                Nothing ->
-                    Err [ ( "gas", "不正な給油量です" ) ]
-
-                Just gas_ ->
-                    Ok gas_
-    in
     V.success Entry
         |> V.andMap (V.success <| model.form_date ++ model.form_time)
-        |> V.andMap distValidator
-        |> V.andMap gasValidator
+        |> V.andMap (V.float .form_distance [ ( "distance", "不正な距離です" ) ])
+        |> V.andMap (V.float .form_gas [ ( "gas", "不正な給油量です" ) ])
         |> V.andMap (V.success model.form_memo)
         |> V.andMap (V.success id)
         |> V.run model

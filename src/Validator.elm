@@ -14,6 +14,21 @@ success val _ =
     Ok val
 
 
+andThen : (a -> Validator model b) -> Validator model a -> Validator model b
+andThen f a model =
+    case a model of
+        Err e ->
+            Err e
+
+        Ok v ->
+            case model |> f v of
+                Err e ->
+                    Err e
+
+                Ok v_ ->
+                    Ok v_
+
+
 map : (a -> b) -> Validator model a -> Validator model b
 map f v =
     \model -> v model |> Result.map f
@@ -42,3 +57,8 @@ andMap v vf model =
 
                 Ok func ->
                     Ok <| func value
+
+
+float : (model -> String) -> Error -> Validator model Float
+float f e model =
+    f model |> String.toFloat |> Result.fromMaybe e
