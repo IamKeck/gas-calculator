@@ -206,6 +206,8 @@ view model =
                 [ div [ HA.class "control" ]
                     [ button [ HA.class "button is-primary", HE.onClick Save ] [ text "保存" ] ]
                 , div [ HA.class "control" ]
+                    [ button [ HA.class "button is-info", HE.onClick ReCalc ] [ text "再計算" ] ]
+                , div [ HA.class "control" ]
                     [ button [ HA.class "button is-danger", HE.onClick ClearAllConfirm ] [ text "データクリア" ]
                     ]
                 ]
