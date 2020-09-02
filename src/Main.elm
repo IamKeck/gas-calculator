@@ -4,6 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes as HA
 import Html.Events as HE
+import Validator as V
 
 
 type alias EntryId =
@@ -18,6 +19,7 @@ type alias Entry =
     { date : String
     , distance : Float
     , gas : Float
+    , memo : String
     , id : EntryId
     }
 
@@ -28,6 +30,7 @@ type alias Model =
     , form_time : String
     , form_distance : String
     , form_gas : String
+    , form_memo : String
     , messages : List String
     , total_distance : Maybe Float
     , total_gas : Maybe Float
@@ -40,6 +43,7 @@ type Msg
     | InputTime String
     | InputDistance String
     | InputGas String
+    | InputMemo String
     | Save
     | ReCalc
     | Remove EntryId
@@ -58,7 +62,7 @@ port clearAllMessage : (() -> msg) -> Sub msg
 
 init : List Entry -> ( Model, Cmd Msg )
 init entries =
-    update ReCalc (Model entries "" "" "" "" [] Nothing Nothing)
+    update ReCalc (Model entries "" "" "" "" "" [] Nothing Nothing)
 
 
 main : Program (List Entry) Model Msg
@@ -94,14 +98,17 @@ update msg model =
         InputGas g ->
             ( { model | form_gas = g }, Cmd.none )
 
+        InputMemo m ->
+            ( { model | form_memo = m }, Cmd.none )
+
         Save ->
             let
                 id =
                     nextId model.entries
             in
-            case validate id model.form_date model.form_time model.form_distance model.form_gas of
+            case validate id model of
                 Err errors ->
-                    ( { model | messages = errors }, Cmd.none )
+                    ( { model | messages = List.map Tuple.second errors }, Cmd.none )
 
                 Ok new_entry ->
                     let
@@ -168,50 +175,75 @@ view model =
                     [ input [ HE.onInput InputGas ] []
                     ]
                 ]
+            , div []
+                [ label [] [ text "備考" ]
+                , div []
+                    [ input [ HE.onInput InputMemo ] []
+                    ]
+                ]
             ]
         , div []
             [ button [ HE.onClick Save ] [ text "保存" ]
             , button [ HE.onClick ClearAllConfirm ] [ text "データクリア" ]
             ]
-        , table []
-            [ thead []
-                [ tr []
-                    [ td [] [ text "日付" ]
-                    , td [] [ text "距離" ]
-                    , td [] [ text "給油量" ]
-                    , td [] [ text "燃費" ]
-                    , td [] [ text "削除" ]
+        , div []
+            [ table []
+                [ thead []
+                    [ tr []
+                        [ td [] [ text "日付" ]
+                        , td [] [ text "距離" ]
+                        , td [] [ text "給油量" ]
+                        , td [] [ text "燃費" ]
+                        , td [] [ text "備考" ]
+                        , td [] [ text "削除" ]
+                        ]
                     ]
+                , tbody [] <|
+                    List.map
+                        (\entry ->
+                            tr []
+                                [ td [] [ text entry.date ]
+                                , td [] [ text <| (String.fromFloat entry.distance ++ "km") ]
+                                , td [] [ text <| (String.fromFloat entry.gas ++ "l") ]
+                                , td [] [ text <| (String.fromFloat <| entry.distance / entry.gas) ++ "km/l" ]
+                                , td [] [ text entry.memo ]
+                                , td [] [ button [ HE.onClick <| Remove entry.id ] [ text "削除" ] ]
+                                ]
+                        )
+                        model.entries
                 ]
-            , tbody [] <|
-                List.map
-                    (\entry ->
-                        tr []
-                            [ td [] [ text entry.date ]
-                            , td [] [ text <| (String.fromFloat entry.distance ++ "km") ]
-                            , td [] [ text <| (String.fromFloat entry.gas ++ "l") ]
-                            , td [] [ text <| (String.fromFloat <| entry.distance / entry.gas) ++ "km/l" ]
-                            , td [] [ button [ HE.onClick <| Remove entry.id ] [ text "削除" ] ]
-                            ]
-                    )
-                    model.entries
             ]
         ]
 
 
-validate : EntryId -> String -> String -> String -> String -> Result (List String) Entry
-validate id date time dist fuel =
-    case String.toFloat dist of
-        Nothing ->
-            Err [ "不正な距離です" ]
-
-        Just dist_ ->
-            case String.toFloat fuel of
+validate : EntryId -> Model -> Result V.Error Entry
+validate id model =
+    let
+        distValidator : V.Validator Model Float
+        distValidator model_ =
+            case String.toFloat model_.form_distance of
                 Nothing ->
-                    Err [ "不正な給油量です" ]
+                    Err [ ( "distance", "不正な距離です" ) ]
 
-                Just fuel_ ->
-                    Ok <| Entry (date ++ " " ++ time) dist_ fuel_ id
+                Just dist ->
+                    Ok dist
+
+        gasValidator : V.Validator Model Float
+        gasValidator model_ =
+            case String.toFloat model_.form_gas of
+                Nothing ->
+                    Err [ ( "gas", "不正な給油量です" ) ]
+
+                Just gas_ ->
+                    Ok gas_
+    in
+    V.success Entry
+        |> V.andMap (V.success <| model.form_date ++ model.form_time)
+        |> V.andMap distValidator
+        |> V.andMap gasValidator
+        |> V.andMap (V.success model.form_memo)
+        |> V.andMap (V.success id)
+        |> V.run model
 
 
 nextId : List Entry -> EntryId
