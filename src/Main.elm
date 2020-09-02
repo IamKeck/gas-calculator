@@ -4,6 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes as HA
 import Html.Events as HE
+import Json.Decode as JD
 import Validator as V
 
 
@@ -60,12 +61,17 @@ port clearAllConfirm : () -> Cmd msg
 port clearAllMessage : (() -> msg) -> Sub msg
 
 
-init : List Entry -> ( Model, Cmd Msg )
-init entries =
-    update ReCalc (Model entries "" "" "" "" "" [] Nothing Nothing)
+init : String -> ( Model, Cmd Msg )
+init entries_json =
+    case JD.decodeString (JD.list entryDecoder) entries_json of
+        Err _ ->
+            ( Model [] "" "" "" "" "" [] Nothing Nothing, saveData [] )
+
+        Ok entries ->
+            update ReCalc (Model entries "" "" "" "" "" [] Nothing Nothing)
 
 
-main : Program (List Entry) Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { init = init
@@ -250,3 +256,13 @@ calcAvgEco model =
 
         Just avg_ ->
             String.fromFloat avg_
+
+
+entryDecoder : JD.Decoder Entry
+entryDecoder =
+    JD.map5 Entry
+        (JD.field "date" JD.string)
+        (JD.field "distance" JD.float)
+        (JD.field "gas" JD.float)
+        (JD.field "memo" JD.string)
+        (JD.field "id" JD.int)
