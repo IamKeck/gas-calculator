@@ -231,7 +231,7 @@ view model =
                                 [ td [] [ text entry.date ]
                                 , td [] [ text <| (String.fromFloat entry.distance ++ "km") ]
                                 , td [] [ text <| (String.fromFloat entry.gas ++ "l") ]
-                                , td [] [ text <| (String.fromFloat <| entry.distance / entry.gas) ++ "km/l" ]
+                                , td [] [ text <| (formatAvg <| entry.distance / entry.gas) ++ "km/l" ]
                                 , td [] [ text entry.memo ]
                                 , td []
                                     [ button
@@ -282,7 +282,7 @@ calcAvgEco model =
             "N/A"
 
         Just avg_ ->
-            String.fromFloat avg_
+            formatAvg avg_
 
 
 entryDecoder : JD.Decoder Entry
@@ -293,3 +293,8 @@ entryDecoder =
         (JD.field "gas" JD.float)
         (JD.field "memo" JD.string)
         (JD.field "id" JD.int)
+
+
+formatAvg : Float -> String
+formatAvg f =
+    f * 100 |> floor |> toFloat |> (\i -> i / 100) |> String.fromFloat
