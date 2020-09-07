@@ -212,39 +212,37 @@ view model =
                     ]
                 ]
             ]
-        , section [ HA.class "section" ]
-            [ table [ HA.class "table is-fullwidth" ]
-                [ thead []
-                    [ tr []
-                        [ td [] [ text "日付" ]
-                        , td [] [ text "距離" ]
-                        , td [] [ text "給油量" ]
-                        , td [] [ text "燃費" ]
-                        , td [] [ text "備考" ]
-                        , td [] [ text "削除" ]
-                        ]
-                    ]
-                , tbody [] <|
-                    List.map
-                        (\entry ->
-                            tr []
-                                [ td [] [ text entry.date ]
-                                , td [] [ text <| (String.fromFloat entry.distance ++ "km") ]
-                                , td [] [ text <| (String.fromFloat entry.gas ++ "l") ]
-                                , td [] [ text <| (formatAvg <| entry.distance / entry.gas) ++ "km/l" ]
-                                , td [] [ text entry.memo ]
-                                , td []
-                                    [ button
-                                        [ HE.onClick <| Remove entry.id
-                                        , HA.class "button is-danger"
-                                        ]
-                                        [ text "削除" ]
+        , section [ HA.class "section" ] <|
+            List.map
+                (\entry ->
+                    div [ HA.class "message gas-entry is-info" ]
+                        [ div [ HA.class "message-header" ]
+                            [ text entry.date
+                            , button [ HA.class "delete", HE.onClick <| Remove entry.id ] []
+                            ]
+                        , div [ HA.class "message-body" ]
+                            [ table [ HA.class "table is-fullwidth" ]
+                                [ tr []
+                                    [ th [] [ text "距離" ]
+                                    , td [] [ text <| (String.fromFloat entry.distance ++ "km") ]
+                                    ]
+                                , tr []
+                                    [ th [] [ text "給油量" ]
+                                    , td [] [ text <| (String.fromFloat entry.gas ++ "l") ]
+                                    ]
+                                , tr []
+                                    [ th [] [ text "燃費" ]
+                                    , td [] [ text <| (formatAvg <| entry.distance / entry.gas) ++ "km/l" ]
+                                    ]
+                                , tr []
+                                    [ th [] [ text "備考" ]
+                                    , td [] [ text entry.memo ]
                                     ]
                                 ]
-                        )
-                        model.entries
-                ]
-            ]
+                            ]
+                        ]
+                )
+                model.entries
         ]
 
 
