@@ -1,10 +1,12 @@
 port module Main exposing (..)
 
 import Browser
+import File.Download as Download
 import Html exposing (..)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Decode as JD
+import Json.Encode as JE
 import Validator as V
 
 
@@ -45,9 +47,10 @@ type Msg
     | InputDistance String
     | InputGas String
     | InputMemo String
-    | Save
+    | Add
     | ReCalc
     | Remove EntryId
+    | SaveToFile
     | ClearAllConfirm
     | ClearAll
 
@@ -107,7 +110,7 @@ update msg model =
         InputMemo m ->
             ( { model | form_memo = m }, Cmd.none )
 
-        Save ->
+        Add ->
             let
                 id =
                     nextId model.entries
@@ -155,6 +158,9 @@ update msg model =
                       }
                     , saveData model.entries
                     )
+
+        SaveToFile ->
+            ( model, Download.string "gas_data.json" "application/json" <| JE.encode 0 <| JE.list encodeEntry model.entries )
 
         ClearAllConfirm ->
             ( model, clearAllConfirm () )
@@ -204,9 +210,11 @@ view model =
                 ]
             , div [ HA.class "field is-grouped is-grouped-centered" ]
                 [ div [ HA.class "control" ]
-                    [ button [ HA.class "button is-primary", HE.onClick Save ] [ text "保存" ] ]
+                    [ button [ HA.class "button is-primary", HE.onClick Add ] [ text "追加" ] ]
                 , div [ HA.class "control" ]
                     [ button [ HA.class "button is-info", HE.onClick ReCalc ] [ text "再計算" ] ]
+                , div [ HA.class "control" ]
+                    [ button [ HA.class "button is-success", HE.onClick SaveToFile ] [ text "履歴をファイルに保存" ] ]
                 , div [ HA.class "control" ]
                     [ button [ HA.class "button is-danger", HE.onClick ClearAllConfirm ] [ text "データクリア" ]
                     ]
@@ -296,3 +304,14 @@ entryDecoder =
 formatAvg : Float -> String
 formatAvg f =
     f * 100 |> floor |> toFloat |> (\i -> i / 100) |> String.fromFloat
+
+
+encodeEntry : Entry -> JE.Value
+encodeEntry e =
+    JE.object
+        [ ( "date", JE.string e.date )
+        , ( "distance", JE.float e.distance )
+        , ( "gas", JE.float e.gas )
+        , ( "memo", JE.string e.memo )
+        , ( "id", JE.int e.id )
+        ]
