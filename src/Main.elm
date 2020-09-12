@@ -181,12 +181,23 @@ view : Model -> Html Msg
 view model =
     div []
         [ section [ HA.class "section" ]
-            [ h1 [ HA.class "title" ] [ text <| "平均燃費は" ++ calcAvgEco model ++ "km/l です" ]
-            , if Set.isEmpty model.selected_entry_id then
-                div [] []
+            [ h1 [ HA.class "title" ]
+                [ text <|
+                    "平均燃費は"
+                        ++ (calcAvgEco model |> Maybe.map formatAvg |> Maybe.withDefault "N/A")
+                        ++ "km/l です"
+                ]
+            , case calcSelectedAvgEco model of
+                Nothing ->
+                    div [] []
 
-              else
-                h1 [ HA.class "title" ] [ text <| "選択された記録の平均燃費は" ++ calcSelectedAvgEco model ++ "km/l です" ]
+                Just f ->
+                    h1 [ HA.class "title" ]
+                        [ text <|
+                            "選択された記録の平均燃費は"
+                                ++ formatAvg f
+                                ++ "km/l です"
+                        ]
             ]
         , if model.messages == [] then
             div [] []
@@ -261,7 +272,11 @@ view model =
                                     ]
                                 , tr []
                                     [ th [] [ text "燃費" ]
-                                    , td [] [ text <| (formatAvg <| entry.distance / entry.gas) ++ "km/l" ]
+                                    , td []
+                                        [ text <|
+                                            (entry.distance / entry.gas |> formatAvg)
+                                                ++ "km/l"
+                                        ]
                                     ]
                                 , tr []
                                     [ th [] [ text "備考" ]
@@ -298,22 +313,9 @@ nextId entries =
     List.map (\entry -> entry.id) entries |> List.foldl max 0 |> (\id -> id + 1)
 
 
-
--- TODO: Maybe Floatにしたい
-
-
-calcAvgEco : Model -> String
+calcAvgEco : Model -> Maybe Float
 calcAvgEco model =
-    let
-        avg =
-            Maybe.map2 (\dist gas -> dist / gas) model.total_distance model.total_gas
-    in
-    case avg of
-        Nothing ->
-            "N/A"
-
-        Just avg_ ->
-            formatAvg avg_
+    Maybe.map2 (\dist gas -> dist / gas) model.total_distance model.total_gas
 
 
 entryDecoder : JD.Decoder Entry
@@ -327,15 +329,11 @@ entryDecoder =
 
 
 formatAvg : Float -> String
-formatAvg f =
-    f * 100 |> floor |> toFloat |> (\i -> i / 100) |> String.fromFloat
+formatAvg avg =
+    avg * 100 |> floor |> toFloat |> (\i -> i / 100) |> String.fromFloat
 
 
-
--- TODO: Maybe Floatにしたい
-
-
-calcSelectedAvgEco : Model -> String
+calcSelectedAvgEco : Model -> Maybe Float
 calcSelectedAvgEco model =
     let
         selected_entries =
@@ -343,7 +341,7 @@ calcSelectedAvgEco model =
     in
     case selected_entries of
         [] ->
-            ""
+            Nothing
 
         entries ->
             let
@@ -353,4 +351,4 @@ calcSelectedAvgEco model =
                 total_gas =
                     entries |> List.map (\entity -> entity.gas) |> List.sum
             in
-            total_distance / total_gas |> formatAvg
+            Just <| total_distance / total_gas
