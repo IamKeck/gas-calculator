@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Decode as JD
+import Set
 import Validator as V
 
 
@@ -35,6 +36,7 @@ type alias Model =
     , messages : List String
     , total_distance : Maybe Float
     , total_gas : Maybe Float
+    , selected_entry_id : Set.Set EntryId
     }
 
 
@@ -45,6 +47,8 @@ type Msg
     | InputDistance String
     | InputGas String
     | InputMemo String
+    | EntityClicked EntryId
+    | UnselectAll
     | Save
     | ReCalc
     | Remove EntryId
@@ -65,10 +69,10 @@ init : String -> ( Model, Cmd Msg )
 init entries_json =
     case JD.decodeString (JD.list entryDecoder) entries_json of
         Err _ ->
-            ( Model [] "" "" "" "" "" [] Nothing Nothing, saveData [] )
+            ( Model [] "" "" "" "" "" [] Nothing Nothing Set.empty, saveData [] )
 
         Ok entries ->
-            update ReCalc (Model entries "" "" "" "" "" [] Nothing Nothing)
+            update ReCalc (Model entries "" "" "" "" "" [] Nothing Nothing Set.empty)
 
 
 main : Program String Model Msg
@@ -106,6 +110,16 @@ update msg model =
 
         InputMemo m ->
             ( { model | form_memo = m }, Cmd.none )
+
+        EntityClicked id ->
+            if Set.member id model.selected_entry_id then
+                ( { model | selected_entry_id = Set.remove id model.selected_entry_id }, Cmd.none )
+
+            else
+                ( { model | selected_entry_id = Set.insert id model.selected_entry_id }, Cmd.none )
+
+        UnselectAll ->
+            ( { model | selected_entry_id = Set.empty }, Cmd.none )
 
         Save ->
             let
@@ -168,6 +182,11 @@ view model =
     div []
         [ section [ HA.class "section" ]
             [ h1 [ HA.class "title" ] [ text <| "平均燃費は" ++ calcAvgEco model ++ "km/l です" ]
+            , if Set.isEmpty model.selected_entry_id then
+                div [] []
+
+              else
+                h1 [ HA.class "title" ] [ text <| "選択された記録の平均燃費は" ++ calcSelectedAvgEco model ++ "km/l です" ]
             ]
         , if model.messages == [] then
             div [] []
@@ -208,6 +227,9 @@ view model =
                 , div [ HA.class "control" ]
                     [ button [ HA.class "button is-info", HE.onClick ReCalc ] [ text "再計算" ] ]
                 , div [ HA.class "control" ]
+                    [ button [ HA.class "button is-danger", HE.onClick UnselectAll ] [ text "全選択解除" ]
+                    ]
+                , div [ HA.class "control" ]
                     [ button [ HA.class "button is-danger", HE.onClick ClearAllConfirm ] [ text "データクリア" ]
                     ]
                 ]
@@ -215,7 +237,16 @@ view model =
         , section [ HA.class "section" ] <|
             List.map
                 (\entry ->
-                    div [ HA.class "message gas-entry is-info" ]
+                    div
+                        [ HA.class "message gas-entry"
+                        , HE.onClick <| EntityClicked entry.id
+                        , HA.class <|
+                            if Set.member entry.id model.selected_entry_id then
+                                "is-danger"
+
+                            else
+                                "is-info"
+                        ]
                         [ div [ HA.class "message-header" ]
                             [ text entry.date
                             , button [ HA.class "delete", HE.onClick <| Remove entry.id ] []
@@ -269,6 +300,10 @@ nextId entries =
     List.map (\entry -> entry.id) entries |> List.foldl max 0 |> (\id -> id + 1)
 
 
+
+-- TODO: Maybe Floatにしたい
+
+
 calcAvgEco : Model -> String
 calcAvgEco model =
     let
@@ -296,3 +331,28 @@ entryDecoder =
 formatAvg : Float -> String
 formatAvg f =
     f * 100 |> floor |> toFloat |> (\i -> i / 100) |> String.fromFloat
+
+
+
+-- TODO: Maybe Floatにしたい
+
+
+calcSelectedAvgEco : Model -> String
+calcSelectedAvgEco model =
+    let
+        selected_entries =
+            List.filter (\entity -> Set.member entity.id model.selected_entry_id) model.entries
+    in
+    case selected_entries of
+        [] ->
+            ""
+
+        entries ->
+            let
+                total_distance =
+                    entries |> List.map (\entity -> entity.distance) |> List.sum
+
+                total_gas =
+                    entries |> List.map (\entity -> entity.gas) |> List.sum
+            in
+            total_distance / total_gas |> formatAvg
