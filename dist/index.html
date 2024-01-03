@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>ガソリン計算</title>
@@ -11,42 +12,47 @@
         .section {
             padding: 2rem 1.5rem;
         }
+
         .gas-entry {
             background-color: unset;
         }
+
         .gas-entry .table {
             background-color: transparent;
         }
-        .gas-entry td, .gas-entry th {
+
+        .gas-entry td,
+        .gas-entry th {
             border: none;
         }
     </style>
 </head>
 
 <body>
-<div id="app"></div>
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js');
-        });
-    }
-</script>
-<script src="/js/main.js"></script>
-<script>
-    const app = Elm.Main.init({
-        node: document.getElementById("app"),
-        flags: window.localStorage.getItem("entries") || ""
-    });
-
-    app.ports.clearAllConfirm.subscribe(() => {
-        if (confirm("全データを削除します よろしいですか?")) {
-            app.ports.clearAllMessage.send(null);
+    <div id="app"></div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
         }
-    });
-    app.ports.saveData.subscribe((entries) => {
-        window.localStorage.setItem("entries", JSON.stringify(entries));
-    });
-</script>
+    </script>
+    <script src="/js/main.js"></script>
+    <script>
+        const app = Elm.Main.init({
+            node: document.getElementById("app"),
+            flags: window.localStorage.getItem("saveData") || window.localStorage.getItem("entries") || ""
+        });
+
+        app.ports.clearAllConfirm.subscribe(() => {
+            if (confirm("全データを削除します よろしいですか?")) {
+                app.ports.clearAllMessage.send(null);
+            }
+        });
+        app.ports.saveData.subscribe((saveData) => {
+            window.localStorage.setItem("saveData", saveData);
+        });
+    </script>
 </body>
+
 </html>
