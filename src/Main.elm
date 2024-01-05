@@ -280,7 +280,7 @@ update msg model =
                             )
 
         ChangeVehicle index ->
-            ( { model | currentItem = index }, Cmd.none )
+            { model | currentItem = index } |> update ReCalc
 
         ChangeVehicleName name ->
             let
